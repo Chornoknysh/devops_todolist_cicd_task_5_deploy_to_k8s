@@ -77,75 +77,27 @@ jobs:
             ${{ env.DockerImageName }}:latest
 
   deploy-dev:
-    runs-on: ubuntu-latest
     needs: docker-ci
-    environment: dev
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Install kind and kubectl
-        run: |
-          curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.23.0/kind-linux-amd64
-          chmod +x ./kind && sudo mv ./kind /usr/local/bin/kind
-          sudo apt-get update && sudo apt-get install -y kubectl
-
-      - name: Create kind cluster (dev)
-        run: kind create cluster --name todo-dev --config ./deploy/cluster.yml
-
-      - name: Set up Helm
-        uses: azure/setup-helm@v4.2.0
-
-      - name: Helm dry-run install (dev)
-        run: |
-          helm dependency update ./helm-charts || true
-          helm install todo-dev ./helm-charts \
-            --namespace todo-dev --create-namespace \
-            --set image.repository=${{ env.DockerImageName }} \
-            --set image.tag=${{ github.sha }} \
-            --dry-run
-
-      - name: Helm upgrade --install (dev)
-        run: |
-          helm upgrade --install todo-dev ./helm-charts \
-            --namespace todo-dev --create-namespace \
-            --set image.repository=${{ env.DockerImageName }} \
-            --set image.tag=${{ github.sha }} \
-            --atomic --wait --timeout 5m
+    uses: ./.github/workflows/reusable-deploy.yml
+    with:
+      environment: dev
+      cluster_name: todo-dev
+      namespace: todo-dev
+      chart_path: ./helm-charts
+      release_name: todo-dev
+      image: ${{ env.DockerImageName }}
+      image_tag: ${{ github.sha }}
+    secrets: inherit
 
   deploy-staging:
-    runs-on: ubuntu-latest
     needs: docker-ci
-    environment: staging
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Install kind and kubectl
-        run: |
-          curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.23.0/kind-linux-amd64
-          chmod +x ./kind && sudo mv ./kind /usr/local/bin/kind
-          sudo apt-get update && sudo apt-get install -y kubectl
-
-      - name: Create kind cluster (staging)
-        run: kind create cluster --name todo-staging --config ./deploy/cluster.yml
-
-      - name: Set up Helm
-        uses: azure/setup-helm@v4.2.0
-
-      - name: Helm dry-run install (staging)
-        run: |
-          helm dependency update ./helm-charts || true
-          helm install todo-staging ./helm-charts \
-            --namespace todo-staging --create-namespace \
-            --set image.repository=${{ env.DockerImageName }} \
-            --set image.tag=${{ github.sha }} \
-            --dry-run
-
-      - name: Helm upgrade --install (staging)
-        run: |
-          helm upgrade --install todo-staging ./helm-charts \
-            --namespace todo-staging --create-namespace \
-            --set image.repository=${{ env.DockerImageName }} \
-            --set image.tag=${{ github.sha }} \
-            --atomic --wait --timeout 5m
+    uses: ./.github/workflows/reusable-deploy.yml
+    with:
+      environment: staging
+      cluster_name: todo-staging
+      namespace: todo-staging
+      chart_path: ./helm-charts
+      release_name: todo-staging
+      image: ${{ env.DockerImageName }}
+      image_tag: ${{ github.sha }}
+    secrets: inherit
