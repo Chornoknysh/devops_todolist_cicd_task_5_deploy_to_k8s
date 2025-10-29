@@ -14,7 +14,7 @@ on:
 
 env:
   PythonVersion: 3.8
-  DockerImageName: danyil/django-todo
+  DockerImageName: chornoknysh/todoapp
 
 jobs:
   python-ci:
